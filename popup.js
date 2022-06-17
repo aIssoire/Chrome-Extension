@@ -1,6 +1,26 @@
 import { getCurentTab } from "./utils";
 
-const addNewBookmark = () => {};
+const addNewBookmark = (bookmarksElement, bookmark) => {
+    const bookmarkTitleElement = document.createElement("div");
+    const newBookmarkElement = document.createElement("div");
+    const controlElement = document.createElement("div");
+
+    bookmarkTitleElement.textContent = bookmark.desc;
+    bookmarkTitleElement.className = "bookmark-title";
+
+    controlElement.className = "bookmark-control";
+
+    newBookmarkElement.id = "bookmark-" + bookmark.time;
+    newBookmarkElement.className = "bookmark";
+    newBookmarkElement.setAttribute("timestamp", bookmark.time);
+
+    setBookmarkAttributes("play", onPlay, controlElement);
+    setBookmarkAttributes("delete", onDelete, controlElement);
+
+    newBookmarkElement.appendChild(bookmarkTitleElement);
+    newBookmarkElement.appendChild(controlElement);
+    bookmarksElement.appendChild(newBookmarkElement);
+};
 
 const viewBookmarks = (currentVideoBookmarks=[]) => {
     const bookmarksElement = document.getElementById("bookmarks");
@@ -16,11 +36,35 @@ const viewBookmarks = (currentVideoBookmarks=[]) => {
     }
 };
 
-const onPlay = e => {};
+const onPlay = e => {
+    const bookmarkTime = e.target.parentNode.parentNode.getAttribute("timestamp");
+    const activeTab = await getCurentTab();
 
-const onDelete = e => {};
+        chrome.tabs.sendMessage(activeTab.id, {
+            type: "PLAY",
+            value: bookmarkTime
+        })
+};
 
-const setBookmarkAttributes = () => {};
+const onDelete = e => {
+    const activeTab = await getCurentTab();
+    const bookmarkTime = e.target.parentNode.parentNode.getAttribute("timestamp");
+    const bookmarkElement = document.getElementById("bookmark-" + bookmarkTime);
+
+    bookmarkElement.parentNode.removeChild(bookmarkElement);
+    chrome.tabs.sendMessage(activeTab.id, {
+        type: "DELETE",
+        value: bookmarkTime
+    }, viewBookmarks);
+};
+
+const setBookmarkAttributes = (src, eventListener, controlParentElement) => {
+    const controlElement = document.createElement("img");
+    controlElement.src = "asset/" + src + ".png";
+    controlElement.title = src;
+    controlElement.addEventListener("click", eventListener);
+    controlParentElement.appendChild(controlElement);
+};
 
 document.addEventListener("DOMContentLoaded", async () => {
     const activeTab = await getCurentTab();
@@ -37,8 +81,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         })
     } else {
         const container = document.getElementsByClassName("container")[0];
-
-        console.log(container);
 
         container.innerHTML = '<div class="title"> This is not a youtube video </div>';
     }
